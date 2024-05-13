@@ -7,12 +7,17 @@ import { scroller } from 'react-scroll';
 
 import type { TokenInfo } from 'types/api/token';
 
+import config from 'configs/app';
 import type { ResourceError } from 'lib/api/resources';
 import useApiQuery from 'lib/api/useApiQuery';
 import throwOnResourceLoadError from 'lib/errors/throwOnResourceLoadError';
 import getCurrencyValue from 'lib/getCurrencyValue';
+import useFeatureValue from 'lib/growthbook/useFeatureValue';
+import useIsMounted from 'lib/hooks/useIsMounted';
 import { TOKEN_COUNTERS } from 'stubs/token';
 import type { TokenTabs } from 'ui/pages/Token';
+import AppActionButton from 'ui/shared/AppActionButton/AppActionButton';
+import useAppActionData from 'ui/shared/AppActionButton/useAppActionData';
 import DetailsInfoItem from 'ui/shared/DetailsInfoItem';
 import DetailsSponsoredItem from 'ui/shared/DetailsSponsoredItem';
 import TruncatedValue from 'ui/shared/TruncatedValue';
@@ -25,12 +30,17 @@ interface Props {
 
 const TokenDetails = ({ tokenQuery }: Props) => {
   const router = useRouter();
+  const isMounted = useIsMounted();
+  const { value: isActionButtonExperiment } = useFeatureValue('action_button_exp', false);
+
   const hash = router.query.hash?.toString();
 
   const tokenCountersQuery = useApiQuery('token_counters', {
     pathParams: { hash },
     queryOptions: { enabled: Boolean(router.query.hash), placeholderData: TOKEN_COUNTERS },
   });
+
+  const appActionData = useAppActionData(hash, isActionButtonExperiment);
 
   const changeUrlAndScroll = useCallback((tab: TokenTabs) => () => {
     router.push(
@@ -66,6 +76,10 @@ const TokenDetails = ({ tokenQuery }: Props) => {
 
   throwOnResourceLoadError(tokenQuery);
 
+  if (!isMounted) {
+    return null;
+  }
+
   const {
     exchange_rate: exchangeRate,
     total_supply: totalSupply,
@@ -77,7 +91,7 @@ const TokenDetails = ({ tokenQuery }: Props) => {
 
   let totalSupplyValue;
 
-  if (type === 'ERC-20') {
+  if (decimals) {
     const totalValue = totalSupply ? getCurrencyValue({ value: totalSupply, accuracy: 3, accuracyUsd: 2, exchangeRate, decimals }) : undefined;
     totalSupplyValue = totalValue?.valueStr;
   } else {
@@ -161,7 +175,26 @@ const TokenDetails = ({ tokenQuery }: Props) => {
         </DetailsInfoItem>
       ) }
 
-      { type !== 'ERC-20' && <TokenNftMarketplaces hash={ hash } isLoading={ tokenQuery.isPlaceholderData }/> }
+      { type !== 'ERC-20' && (
+        <TokenNftMarketplaces
+          hash={ hash }
+          isLoading={ tokenQuery.isPlaceholderData }
+          appActionData={ appActionData }
+          source="NFT collection"
+          isActionButtonExperiment={ isActionButtonExperiment }
+        />
+      ) }
+
+      { (type !== 'ERC-20' && config.UI.views.nft.marketplaces.length === 0 && appActionData && isActionButtonExperiment) && (
+        <DetailsInfoItem
+          title="Dapp"
+          hint="Link to the dapp"
+          alignSelf="center"
+          py={ 1 }
+        >
+          <AppActionButton data={ appActionData } height="30px" source="NFT collection"/>
+        </DetailsInfoItem>
+      ) }
 
       <DetailsSponsoredItem isLoading={ tokenQuery.isPlaceholderData }/>
     </Grid>

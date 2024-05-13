@@ -1,11 +1,13 @@
 export { default as account } from './account';
 export { default as addressVerification } from './addressVerification';
+export { default as addressMetadata } from './addressMetadata';
 export { default as adsBanner } from './adsBanner';
 export { default as adsText } from './adsText';
 export { default as beaconChain } from './beaconChain';
 export { default as bridgedTokens } from './bridgedTokens';
 export { default as blockchainInteraction } from './blockchainInteraction';
 export { default as csvExport } from './csvExport';
+export { default as dataAvailability } from './dataAvailability';
 export { default as gasTracker } from './gasTracker';
 export { default as googleAnalytics } from './googleAnalytics';
 export { default as graphqlApiDocs } from './graphqlApiDocs';
